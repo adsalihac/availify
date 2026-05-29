@@ -1,5 +1,7 @@
 # Availify
 
+[Features](#features) · [Getting Started](#getting-started) · [API Reference](#api-reference) · [Contributing](#contributing)
+
 Availify is an app name availability checker for product teams, indie hackers, and startup founders.
 
 Given a candidate app name, Availify checks the most common launch surfaces and reports availability in seconds:
@@ -8,34 +10,64 @@ Given a candidate app name, Availify checks the most common launch surfaces and 
 - Google Play Store
 - Domain names (com, app, io, dev, co)
 - GitHub username and organization handles
+- npm package names
+- PyPI package names
+- Docker Hub image names
+- Homebrew formula names
+- Crates.io crate names
+- RubyGems gem names
 - Common bundle identifier patterns
+- Social media handles
 
-It also computes an overall availability score, proposes deterministic fallback names, and lets you copy or export results.
+It also computes an overall availability score, analyzes brand and phonetic quality, proposes deterministic fallback names, and ships developer-friendly copy/export tools.
 
 ## Product Overview
 
 Availify helps you validate naming risk before branding or development work gets too far.
 
-### What you get
+## Features
 
-- Fast multi-provider checks from one input
-- Normalized name variants and preview suggestions
-- Availability score with quality label
-- Suggested alternative names when conflicts exist
+- Multi-platform name checks across app stores, domains, code registries, package ecosystems, and social handles
+- Live progress terminal showing each provider as it completes
+- Instant variant preview while typing
+- Recent searches stored locally for fast retries
+- Command palette with search, copy, and export actions
+- Availability score with a detailed provider breakdown
+- Brand score with naming tips
+- Phonetic score to estimate pronounceability
+- Deterministic fallback name suggestions when conflicts exist
+- Trademark shortcut links for USPTO, EUIPO, and WIPO
 - Copy-ready bundle identifiers
-- JSON export of full availability report
-- Recent searches and command palette actions
+- Exportable JSON results
+- Developer tools panel with generated `package.json` and `.env` snippets
 
 ### Why Availify
 
 Name checks are usually scattered across many tabs and tools. Availify centralizes those checks, so you can evaluate launch viability with one flow.
 
+### Platforms covered
+
+- Apple App Store
+- Google Play Store
+- GitHub usernames and organizations
+- Domains: `.com`, `.app`, `.io`, `.dev`, `.co`
+- npm
+- PyPI
+- Docker Hub
+- Homebrew
+- Crates.io
+- RubyGems
+- Bundle ID candidates
+- Social media checks for Instagram, X/Twitter, TikTok, Reddit, Medium, YouTube, LinkedIn, Facebook, Discord, and Product Hunt
+
+Some social platforms restrict automated checks server-side. In those cases, Availify surfaces the profile targets so they can be verified manually.
+
 ## How It Works
 
 1. Enter a name in the UI.
 2. The client submits the request to `POST /api/check`.
-3. Provider checks run in parallel for stores, domains, GitHub, and bundle IDs.
-4. Results are merged into a unified response with score, suggestions, and timing.
+3. Provider checks run in parallel across stores, domains, registries, package ecosystems, social handles, and bundle IDs.
+4. Results are merged into a unified response with availability score, brand analysis, phonetic analysis, suggestions, and timing.
 
 The API includes in-memory protections:
 
@@ -96,7 +128,29 @@ Success response shape:
 	"normalized": "availify",
 	"variants": ["availify", "Availify"],
 	"score": { "value": 82, "label": "Good Availability" },
-	"providers": {},
+	"brandScore": {
+		"score": 90,
+		"label": "Strong Brand",
+		"tips": []
+	},
+	"phoneticScore": {
+		"score": 80,
+		"label": "Easy to say"
+	},
+	"providers": {
+		"apple": {},
+		"googlePlay": {},
+		"domains": {},
+		"github": {},
+		"bundleIds": {},
+		"npm": {},
+		"pypi": {},
+		"social": {},
+		"dockerHub": {},
+		"homebrew": {},
+		"crates": {},
+		"rubygems": {}
+	},
 	"suggestions": ["AvailifyHQ", "GetAvailify"],
 	"timings": { "totalMs": 312 }
 }
@@ -119,7 +173,7 @@ src/
 		providers/              # provider implementations
 		hooks.ts                # utility hooks
 		types.ts                # shared data contracts
-		utils.ts                # normalization, scoring, suggestions
+		utils.ts                # normalization, scoring, naming analysis
 ```
 
 ## Contributing
@@ -155,4 +209,4 @@ npm run build
 
 ## License
 
-No license file is currently included. Add one before distributing or using this project in production.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
