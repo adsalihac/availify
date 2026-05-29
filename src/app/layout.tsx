@@ -22,6 +22,12 @@ export const metadata: Metadata = {
   title: "App Name Checker",
   description:
     "Check App Store, Play Store, Domains, Bundle IDs, and GitHub availability in seconds.",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

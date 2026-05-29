@@ -12,6 +12,7 @@ import { CommandPalette } from "@/components/command-palette";
 import { ProgressTerminal, ProgressStatus } from "@/components/progress-terminal";
 import { ScoreCard } from "@/components/score-card";
 import { SkeletonCard } from "@/components/skeleton-card";
+import { AppIcon } from "@/components/app-icon";
 
 const STORAGE_KEY = "app-name-checker:recent";
 
@@ -204,6 +205,37 @@ export default function Home() {
     <div className="relative min-h-screen bg-background">
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
 
+      <header className="relative z-10 border-b border-border/80 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <AppIcon size={36} />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold text-primary">
+                App Name Checker
+              </span>
+              <span className="text-[11px] uppercase tracking-[0.2em] text-secondary">
+                Developer Utility
+              </span>
+            </div>
+          </div>
+          <a
+            href="https://github.com/adsalihac"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-xs font-semibold text-primary transition hover:border-primary"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 16 16"
+              className="h-4 w-4 fill-current"
+            >
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+            </svg>
+            Contribute
+          </a>
+        </div>
+      </header>
+
       <CommandPalette
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
@@ -217,12 +249,12 @@ export default function Home() {
         onExportReport={handleExport}
       />
 
-      <main className="relative mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-12 px-6 pb-24 pt-16">
+      <main className="relative mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-12 px-6 pb-24 pt-12">
         <header className="mx-auto flex w-full max-w-3xl flex-col items-center text-center gap-4">
-          <h1 className="text-4xl font-semibold text-primary md:text-5xl">
+          <h1 className="text-[40px] font-bold leading-[1.05] text-primary md:text-[48px]">
             App Name Checker
           </h1>
-          <p className="text-sm font-medium text-secondary md:text-base">
+          <p className="text-[14px] font-medium text-secondary md:text-[15px]">
             Check App Store, Play Store, Domains, Bundle IDs, and GitHub
             availability in seconds.
           </p>
@@ -239,7 +271,7 @@ export default function Home() {
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="MyAwesomeApp"
-                className="h-14 w-full rounded-2xl border border-border bg-white px-4 text-base font-medium text-primary shadow-[0_15px_45px_-35px_rgba(15,23,42,0.3)] outline-none transition focus-visible:ring-2 focus-visible:ring-ring/30"
+                className="h-14 w-full rounded-2xl border border-border bg-white px-4 text-[15px] font-medium text-primary shadow-[0_15px_45px_-35px_rgba(15,23,42,0.3)] outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/25 placeholder:text-secondary/70"
               />
               <span className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-border px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary md:inline-flex">
                 ⌘ K
@@ -247,7 +279,7 @@ export default function Home() {
             </div>
             <button
               type="submit"
-              className="h-14 rounded-2xl bg-primary px-6 text-sm font-semibold text-white shadow-[0_15px_45px_-35px_rgba(15,23,42,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-35px_rgba(15,23,42,0.5)]"
+              className="h-14 rounded-2xl bg-primary px-6 text-sm font-semibold text-white shadow-[0_15px_45px_-35px_rgba(15,23,42,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-35px_rgba(15,23,42,0.5)] active:translate-y-0"
             >
               Check Availability
             </button>
@@ -319,12 +351,12 @@ export default function Home() {
               <div className="col-span-12 grid grid-cols-12 gap-6">
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-[16px] font-semibold text-primary">
                       Apple App Store
                     </h3>
                     <AvailabilityBadge status={results.providers.apple.status} />
                   </div>
-                  <div className="mt-4 space-y-2 text-sm text-secondary">
+                  <div className="mt-4 space-y-2 text-[14px] text-secondary">
                     {results.providers.apple.error && (
                       <p className="text-rose-600">
                         {results.providers.apple.error}
@@ -360,14 +392,14 @@ export default function Home() {
 
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-[16px] font-semibold text-primary">
                       Google Play Store
                     </h3>
                     <AvailabilityBadge
                       status={results.providers.googlePlay.status}
                     />
                   </div>
-                  <div className="mt-4 space-y-2 text-sm text-secondary">
+                  <div className="mt-4 space-y-2 text-[14px] text-secondary">
                     {results.providers.googlePlay.error && (
                       <p className="text-rose-600">
                         {results.providers.googlePlay.error}
@@ -403,7 +435,7 @@ export default function Home() {
 
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-[16px] font-semibold text-primary">
                       Domains
                     </h3>
                     <AvailabilityBadge status={results.providers.domains.status} />
@@ -431,12 +463,12 @@ export default function Home() {
 
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-[16px] font-semibold text-primary">
                       GitHub
                     </h3>
                     <AvailabilityBadge status={results.providers.github.status} />
                   </div>
-                  <div className="mt-4 space-y-3 text-sm">
+                  <div className="mt-4 space-y-3 text-[14px]">
                     <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
                       <div>
                         <p className="text-sm font-medium text-primary">
@@ -464,14 +496,14 @@ export default function Home() {
 
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-semibold text-primary">
+                    <h3 className="text-[16px] font-semibold text-primary">
                       Bundle Identifiers
                     </h3>
                     <AvailabilityBadge
                       status={results.providers.bundleIds.status}
                     />
                   </div>
-                  <div className="mt-4 space-y-3 text-sm">
+                  <div className="mt-4 space-y-3 text-[14px]">
                     {results.providers.bundleIds.data.results.map((bundle) => (
                       <div
                         key={bundle.bundleId}
@@ -503,7 +535,7 @@ export default function Home() {
                 {isUnavailable && results.suggestions.length > 0 && (
                   <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-semibold text-primary">
+                      <h3 className="text-[16px] font-semibold text-primary">
                         Name Suggestions
                       </h3>
                       <span className="text-xs uppercase tracking-[0.2em] text-secondary">
@@ -547,6 +579,20 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <footer className="border-t border-border/80 bg-white/80">
+        <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between px-6 py-6 text-xs text-secondary">
+          <span>© {new Date().getFullYear()} adsalihac</span>
+          <a
+            href="https://github.com/adsalihac"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-primary transition hover:text-secondary"
+          >
+            github.com/adsalihac
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
