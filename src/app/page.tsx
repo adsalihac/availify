@@ -371,7 +371,7 @@ export default function Home() {
               )}
             </a>
             <a
-              href="https://github.com/adsalihac"
+              href="https://github.com/adsalihac/availify"
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/50 px-4 py-1.5 text-xs font-semibold text-primary shadow-sm backdrop-blur-sm transition hover:border-primary/40 hover:bg-white/80"
