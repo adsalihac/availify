@@ -25,6 +25,10 @@ const progressLabels = [
   { key: "npm", label: "npm Registry" },
   { key: "pypi", label: "PyPI" },
   { key: "social", label: "Social Media" },
+  { key: "dockerHub", label: "Docker Hub" },
+  { key: "homebrew", label: "Homebrew" },
+  { key: "crates", label: "Crates.io" },
+  { key: "rubygems", label: "RubyGems" },
 ] as const;
 
 type ProgressState = Record<(typeof progressLabels)[number]["key"], ProgressStatus>;
@@ -110,11 +114,16 @@ export default function Home() {
     npm: "checking",
     pypi: "checking",
     social: "checking",
+    dockerHub: "checking",
+    homebrew: "checking",
+    crates: "checking",
+    rubygems: "checking",
   });
   const [toast, setToast] = useState<string | null>(null);
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
   const [starCount, setStarCount] = useState<number | null>(null);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showDevTools, setShowDevTools] = useState(false);
 
   useEffect(() => {
     fetch("https://api.github.com/repos/adsalihac/availify")
@@ -156,6 +165,10 @@ export default function Home() {
         npm: data.providers.npm.status === "error" ? "error" : "complete",
         pypi: data.providers.pypi.status === "error" ? "error" : "complete",
         social: data.providers.social.status === "error" ? "error" : "complete",
+        dockerHub: data.providers.dockerHub.status === "error" ? "error" : "complete",
+        homebrew: data.providers.homebrew.status === "error" ? "error" : "complete",
+        crates: data.providers.crates.status === "error" ? "error" : "complete",
+        rubygems: data.providers.rubygems.status === "error" ? "error" : "complete",
       });
     },
     onError: (err: Error) => {
@@ -170,6 +183,10 @@ export default function Home() {
         npm: "error",
         pypi: "error",
         social: "error",
+        dockerHub: "error",
+        homebrew: "error",
+        crates: "error",
+        rubygems: "error",
       });
     },
   });
@@ -198,6 +215,10 @@ export default function Home() {
         npm: "checking",
         pypi: "checking",
         social: "checking",
+        dockerHub: "checking",
+        homebrew: "checking",
+        crates: "checking",
+        rubygems: "checking",
       });
       setError(null);
       setResults(null);
@@ -254,6 +275,31 @@ export default function Home() {
     if (!results) return;
     await navigator.clipboard.writeText(JSON.stringify(results, null, 2));
     showToast("Results copied");
+  }, [results, showToast]);
+
+  const handleCopyMarkdown = useCallback(async () => {
+    if (!results) return;
+    const statusIcon = (s: string) => (s === "available" ? "✓ Available" : s === "taken" ? "✗ Taken" : "~ Mixed");
+    const md = [
+      `# Availify Report: ${results.name}`,
+      ``,
+      `**Score:** ${results.score.value}% — ${results.score.label}`,
+      ``,
+      `| Platform | Status |`,
+      `|---|---|`,
+      `| Apple App Store | ${statusIcon(results.providers.apple.status)} |`,
+      `| Google Play | ${statusIcon(results.providers.googlePlay.status)} |`,
+      `| npm | ${statusIcon(results.providers.npm.status)} |`,
+      `| PyPI | ${statusIcon(results.providers.pypi.status)} |`,
+      `| Docker Hub | ${statusIcon(results.providers.dockerHub.status)} |`,
+      `| Homebrew | ${statusIcon(results.providers.homebrew.status)} |`,
+      `| Crates.io | ${statusIcon(results.providers.crates.status)} |`,
+      `| RubyGems | ${statusIcon(results.providers.rubygems.status)} |`,
+      `| GitHub | ${statusIcon(results.providers.github.status)} |`,
+      `| Domains | ${statusIcon(results.providers.domains.status)} |`,
+    ].join("\n");
+    await navigator.clipboard.writeText(md);
+    showToast("Markdown copied!");
   }, [results, showToast]);
 
   const handleExport = useCallback(() => {
@@ -486,6 +532,10 @@ export default function Home() {
                       { label: "Bundle IDs", status: results.providers.bundleIds.status },
                       { label: "npm", status: results.providers.npm.status },
                       { label: "PyPI", status: results.providers.pypi.status },
+                      { label: "Docker Hub", status: results.providers.dockerHub.status },
+                      { label: "Homebrew", status: results.providers.homebrew.status },
+                      { label: "Crates.io", status: results.providers.crates.status },
+                      { label: "RubyGems", status: results.providers.rubygems.status },
                       { label: "Social Media", status: results.providers.social.status },
                     ].map((row) => (
                       <div key={row.label} className="flex items-center justify-between rounded-lg px-3 py-1.5 hover:bg-slate-50">
@@ -507,6 +557,97 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Brand Intelligence */}
+              <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
+                <p className="mb-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">Brand Intelligence</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Brand Score */}
+                  <div className="rounded-xl border border-border p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-primary">Brand Score</p>
+                      <span className={clsx(
+                        "text-lg font-bold",
+                        results.brandScore.score >= 75 ? "text-emerald-600" :
+                        results.brandScore.score >= 50 ? "text-amber-600" : "text-rose-600"
+                      )}>
+                        {results.brandScore.score}/100
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-secondary">{results.brandScore.label}</p>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={clsx(
+                          "h-full rounded-full transition-all",
+                          results.brandScore.score >= 75 ? "bg-emerald-500" :
+                          results.brandScore.score >= 50 ? "bg-amber-500" : "bg-rose-500"
+                        )}
+                        style={{ width: `${results.brandScore.score}%` }}
+                      />
+                    </div>
+                    {results.brandScore.tips.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {results.brandScore.tips.map((tip, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-xs text-secondary">
+                            <span className="mt-0.5 text-amber-500">•</span>
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Phonetic Score */}
+                  <div className="rounded-xl border border-border p-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-primary">Phonetic Score</p>
+                      <span className={clsx(
+                        "text-lg font-bold",
+                        results.phoneticScore.score >= 75 ? "text-emerald-600" :
+                        results.phoneticScore.score >= 50 ? "text-amber-600" : "text-rose-600"
+                      )}>
+                        {results.phoneticScore.score}/100
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-secondary">{results.phoneticScore.label}</p>
+                    <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={clsx(
+                          "h-full rounded-full transition-all",
+                          results.phoneticScore.score >= 75 ? "bg-emerald-500" :
+                          results.phoneticScore.score >= 50 ? "bg-amber-500" : "bg-rose-500"
+                        )}
+                        style={{ width: `${results.phoneticScore.score}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trademark Search */}
+                <div className="mt-4 border-t border-border pt-4">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">Trademark Search</p>
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`https://tmsearch.uspto.gov/search/search-information?searchTerm=${encodeURIComponent(results.name)}&searchOption=US_PATENT_AND_TRADEMARK`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-slate-50"
+                    >Search USPTO →</a>
+                    <a
+                      href={`https://euipo.europa.eu/eSearch/#basic/1+1+1+1/${encodeURIComponent(results.name)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-slate-50"
+                    >Search EUIPO →</a>
+                    <a
+                      href={`https://branddb.wipo.int/branddb/en/search.jsf?search=${encodeURIComponent(results.name)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-slate-50"
+                    >Search WIPO →</a>
+                  </div>
+                </div>
+              </div>
+
               {/* Share row */}
               <div className="col-span-12 flex items-center justify-between">
                 <p className="text-sm font-medium text-secondary">
@@ -523,6 +664,16 @@ export default function Home() {
                       <path d="M8 2v8M5 7l3 3 3-3M3 12h10" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                     Export JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyMarkdown}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition hover:border-primary"
+                  >
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 3h12v2H2zM2 7h8v2H2zM2 11h10v2H2z" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Copy as Markdown
                   </button>
                   <button
                     type="button"
@@ -884,6 +1035,178 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Docker Hub */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1D63ED]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M13.983 11.078h2.119a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.119a.185.185 0 0 0-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 0 0 .186-.186V3.574a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 0 0 .186-.186V6.29a.186.186 0 0 0-.186-.185h-2.118a.185.185 0 0 0-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 0 0 .184-.186V6.29a.185.185 0 0 0-.185-.185H8.1a.185.185 0 0 0-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 0 0 .185-.186V6.29a.185.185 0 0 0-.185-.185H5.136a.186.186 0 0 0-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 0 0 .186-.185V9.006a.186.186 0 0 0-.186-.186h-2.118a.185.185 0 0 0-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 0 0 .185-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.186.186 0 0 0-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.186.186 0 0 0 .184-.185V9.006a.185.185 0 0 0-.184-.186h-2.12a.185.185 0 0 0-.185.186v1.887c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 0 0-.75.748 11.376 11.376 0 0 0 .692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 0 0 3.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">Docker Hub</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.dockerHub.status} />
+                  </div>
+                  <div className="mt-4">
+                    {results.providers.dockerHub.error ? (
+                      <p className="text-sm text-rose-600">{results.providers.dockerHub.error}</p>
+                    ) : (
+                      <div className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm font-medium text-primary">{results.providers.dockerHub.data.imageName}</p>
+                            <p className="text-xs text-secondary">Docker image name</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AvailabilityBadge status={results.providers.dockerHub.status} />
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(results.providers.dockerHub.data.imageName)}
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                            >
+                              {copiedValue === results.providers.dockerHub.data.imageName ? "Copied!" : "Copy"}
+                            </button>
+                            <a href={results.providers.dockerHub.data.url} target="_blank" rel="noreferrer"
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary">
+                              View →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Homebrew */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#FBB040]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">Homebrew</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.homebrew.status} />
+                  </div>
+                  <div className="mt-4">
+                    {results.providers.homebrew.error ? (
+                      <p className="text-sm text-rose-600">{results.providers.homebrew.error}</p>
+                    ) : (
+                      <div className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm font-medium text-primary">{results.providers.homebrew.data.formulaName}</p>
+                            <p className="text-xs text-secondary">Homebrew formula name</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AvailabilityBadge status={results.providers.homebrew.status} />
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(results.providers.homebrew.data.formulaName)}
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                            >
+                              {copiedValue === results.providers.homebrew.data.formulaName ? "Copied!" : "Copy"}
+                            </button>
+                            <a href={results.providers.homebrew.data.url} target="_blank" rel="noreferrer"
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary">
+                              View →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Crates.io */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CE4A00]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">Crates.io</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.crates.status} />
+                  </div>
+                  <div className="mt-4">
+                    {results.providers.crates.error ? (
+                      <p className="text-sm text-rose-600">{results.providers.crates.error}</p>
+                    ) : (
+                      <div className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm font-medium text-primary">{results.providers.crates.data.crateName}</p>
+                            <p className="text-xs text-secondary">Crates.io crate name</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AvailabilityBadge status={results.providers.crates.status} />
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(results.providers.crates.data.crateName)}
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                            >
+                              {copiedValue === results.providers.crates.data.crateName ? "Copied!" : "Copy"}
+                            </button>
+                            <a href={results.providers.crates.data.url} target="_blank" rel="noreferrer"
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary">
+                              View →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* RubyGems */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CC342D]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M22 9L12 2 2 9l10 13 10-13z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">RubyGems</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.rubygems.status} />
+                  </div>
+                  <div className="mt-4">
+                    {results.providers.rubygems.error ? (
+                      <p className="text-sm text-rose-600">{results.providers.rubygems.error}</p>
+                    ) : (
+                      <div className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm font-medium text-primary">{results.providers.rubygems.data.gemName}</p>
+                            <p className="text-xs text-secondary">RubyGems gem name</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AvailabilityBadge status={results.providers.rubygems.status} />
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(results.providers.rubygems.data.gemName)}
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                            >
+                              {copiedValue === results.providers.rubygems.data.gemName ? "Copied!" : "Copy"}
+                            </button>
+                            <a href={results.providers.rubygems.data.url} target="_blank" rel="noreferrer"
+                              className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary">
+                              View →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Social Media */}
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
                   <div className="flex items-center justify-between">
@@ -956,6 +1279,68 @@ export default function Home() {
                     </div>
                   </div>
                 )}
+
+                {/* Developer Tools */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-[15px] font-semibold text-primary">Developer Tools</h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowDevTools(v => !v)}
+                      className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-slate-50"
+                    >
+                      {showDevTools ? "Hide" : "Show tools"}
+                    </button>
+                  </div>
+
+                  {showDevTools && (
+                    <div className="mt-5 space-y-5">
+                      {/* App Store Connect */}
+                      <div>
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">App Store Connect</p>
+                        <a href="https://appstoreconnect.apple.com/apps/new" target="_blank" rel="noreferrer"
+                          className="inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-slate-50">
+                          Create new app on App Store Connect →
+                        </a>
+                      </div>
+
+                      {/* package.json */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">package.json snippet</p>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(JSON.stringify({ name: results.normalized, version: "1.0.0", description: `Your ${results.name} app`, main: "index.js" }, null, 2))}
+                            className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                          >Copy</button>
+                        </div>
+                        <pre className="rounded-xl bg-slate-50 p-4 font-mono text-[12px] text-primary overflow-x-auto">{JSON.stringify({ name: results.normalized, version: "1.0.0", description: `Your ${results.name} app`, main: "index.js" }, null, 2)}</pre>
+                      </div>
+
+                      {/* .env template */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">.env template</p>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy([`APP_NAME=${results.name}`, `BUNDLE_ID=com.${results.normalized}`, `APP_VERSION=1.0.0`].join("\n"))}
+                            className="rounded-lg border border-border px-2.5 py-1 text-[11px] font-semibold text-secondary transition hover:border-primary hover:text-primary"
+                          >Copy</button>
+                        </div>
+                        <pre className="rounded-xl bg-slate-50 p-4 font-mono text-[12px] text-primary">{[`APP_NAME=${results.name}`, `BUNDLE_ID=com.${results.normalized}`, `APP_VERSION=1.0.0`].join("\n")}</pre>
+                      </div>
+
+                      {/* Google Play Console */}
+                      <div>
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">Google Play Console</p>
+                        <a href="https://play.google.com/console/u/0/developers" target="_blank" rel="noreferrer"
+                          className="inline-flex rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-primary transition hover:border-primary hover:bg-slate-50">
+                          Open Google Play Console →
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </>
           )}

@@ -80,6 +80,10 @@ export function calculateScore(response: CheckResponse) {
   statuses.push(response.providers.github.data.org);
   statuses.push(response.providers.npm.status);
   statuses.push(response.providers.pypi.status);
+  statuses.push(response.providers.dockerHub.status);
+  statuses.push(response.providers.homebrew.status);
+  statuses.push(response.providers.crates.status);
+  statuses.push(response.providers.rubygems.status);
   response.providers.domains.data.results.forEach((d) => statuses.push(d.status));
   response.providers.bundleIds.data.results.forEach((b) => statuses.push(b.status));
   response.providers.social.data.results.forEach((s) => statuses.push(s.status));
@@ -93,4 +97,87 @@ export function calculateScore(response: CheckResponse) {
 
   const value = Math.round(weighted * 100);
   return { value, label: scoreLabel(value) };
+}
+
+export function calcBrandScore(name: string): { score: number; label: string; tips: string[] } {
+  let score = 0;
+  const tips: string[] = [];
+
+  const len = name.length;
+  if (len >= 4 && len <= 10) {
+    score += 25;
+  } else if (len >= 11 && len <= 15) {
+    score += 10;
+  } else {
+    tips.push("Aim for a name between 4–10 characters for best brand recall.");
+  }
+
+  if (!/\d/.test(name)) {
+    score += 20;
+  } else {
+    tips.push("Avoid numbers in your name for a cleaner brand identity.");
+  }
+
+  if (!/[-\s]/.test(name)) {
+    score += 15;
+  } else {
+    tips.push("Remove hyphens and spaces for a stronger, compact brand name.");
+  }
+
+  if (!/\s/.test(name.trim()) && !name.includes(" ")) {
+    score += 15;
+  } else {
+    tips.push("Single-word names are more memorable and easier to brand.");
+  }
+
+  if (!/^\d/.test(name)) {
+    score += 10;
+  } else {
+    tips.push("Don't start your name with a number.");
+  }
+
+  if (/^[A-Z]/.test(name)) {
+    score += 15;
+  } else {
+    tips.push("Start with an uppercase letter for a polished brand feel.");
+  }
+
+  const label =
+    score >= 75 ? "Strong Brand" :
+    score >= 50 ? "Good Brand" :
+    score >= 25 ? "Average Brand" : "Weak Brand";
+
+  return { score, label, tips };
+}
+
+export function calcPhoneticScore(name: string): { score: number; label: string } {
+  let score = 0;
+
+  const consonantClusterRe = /[^aeiouAEIOU\s]{4,}/;
+  if (!consonantClusterRe.test(name)) {
+    score += 30;
+  }
+
+  const vowelMatches = name.match(/[aeiouAEIOU]/g) ?? [];
+  const vowelDensity = vowelMatches.length / Math.max(name.replace(/\s/g, "").length, 1);
+  if (vowelDensity >= 0.25) {
+    score += 20;
+  }
+
+  const awkwardEndRe = /[^aeiouAEIOU\s]{3,}$/;
+  if (!awkwardEndRe.test(name)) {
+    score += 20;
+  }
+
+  const vowelGroups = name.match(/[aeiouAEIOU]+/gi) ?? [];
+  const syllables = vowelGroups.length;
+  if (syllables < 3) {
+    score += 30;
+  }
+
+  const label =
+    score >= 75 ? "Easy to say" :
+    score >= 50 ? "Moderate" : "Hard to pronounce";
+
+  return { score, label };
 }

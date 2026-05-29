@@ -40,6 +40,8 @@ export interface CheckResponse {
     value: number;
     label: string;
   };
+  brandScore: { score: number; label: string; tips: string[] };
+  phoneticScore: { score: number; label: string };
   providers: {
     apple: ProviderResult<{ matches: StoreMatch[] }>;
     googlePlay: ProviderResult<{ matches: StoreMatch[] }>;
@@ -49,6 +51,10 @@ export interface CheckResponse {
     npm: ProviderResult<{ packageName: string; url: string }>;
     pypi: ProviderResult<{ packageName: string; url: string }>;
     social: ProviderResult<{ results: SocialResult[] }>;
+    dockerHub: ProviderResult<{ imageName: string; url: string }>;
+    homebrew: ProviderResult<{ formulaName: string; url: string }>;
+    crates: ProviderResult<{ crateName: string; url: string }>;
+    rubygems: ProviderResult<{ gemName: string; url: string }>;
   };
   suggestions: string[];
   timings: {

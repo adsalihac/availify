@@ -9,8 +9,14 @@ import {
   NpmProvider,
   PyPIProvider,
   SocialProvider,
+  DockerHubProvider,
+  HomebrewProvider,
+  CratesProvider,
+  RubyGemsProvider,
 } from "@/lib/providers";
 import {
+  calcBrandScore,
+  calcPhoneticScore,
   calculateScore,
   generateBundleIds,
   generateDomains,
@@ -18,6 +24,7 @@ import {
   generateVariants,
   normalizeName,
   toCompactLower,
+  toKebabCase,
 } from "@/lib/utils";
 
 const CACHE_TTL_MS = 1000 * 60 * 10;
@@ -97,6 +104,10 @@ export async function POST(request: NextRequest) {
     new NpmProvider(),
     new PyPIProvider(),
     new SocialProvider(),
+    new DockerHubProvider(),
+    new HomebrewProvider(),
+    new CratesProvider(),
+    new RubyGemsProvider(),
   ];
 
   const providerResults = await Promise.all(
@@ -175,6 +186,46 @@ export async function POST(request: NextRequest) {
             emptyProvider({ results: [] }, "Unable to check social media."),
           ] as const;
         }
+        if (provider.id === "dockerHub") {
+          const imageName = toCompactLower(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { imageName, url: `https://hub.docker.com/r/${imageName}` },
+              "Unable to check Docker Hub.",
+            ),
+          ] as const;
+        }
+        if (provider.id === "homebrew") {
+          const formulaName = toKebabCase(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { formulaName, url: `https://formulae.brew.sh/formula/${formulaName}` },
+              "Unable to check Homebrew.",
+            ),
+          ] as const;
+        }
+        if (provider.id === "crates") {
+          const crateName = toCompactLower(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { crateName, url: `https://crates.io/crates/${crateName}` },
+              "Unable to check Crates.io.",
+            ),
+          ] as const;
+        }
+        if (provider.id === "rubygems") {
+          const gemName = toCompactLower(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { gemName, url: `https://rubygems.org/gems/${gemName}` },
+              "Unable to check RubyGems.",
+            ),
+          ] as const;
+        }
         return [
           provider.id,
           emptyProvider({ matches: [] }, `Unable to check ${provider.label}.`),
@@ -185,11 +236,16 @@ export async function POST(request: NextRequest) {
 
   const providerMap = Object.fromEntries(providerResults) as CheckResponse["providers"];
 
+  const brandScore = calcBrandScore(name);
+  const phoneticScore = calcPhoneticScore(name);
+
   const response: CheckResponse = {
     name,
     normalized: name.toLowerCase(),
     variants,
     score: { value: 0, label: "" },
+    brandScore,
+    phoneticScore,
     providers: providerMap,
     suggestions: generateSuggestions(name),
     timings: { totalMs: Date.now() - start },
