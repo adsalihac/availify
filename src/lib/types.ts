@@ -38,6 +38,7 @@ export interface CheckResponse {
     domains: ProviderResult<{ results: DomainResult[] }>;
     github: ProviderResult<{ username: AvailabilityStatus; org: AvailabilityStatus }>;
     bundleIds: ProviderResult<{ results: BundleIdResult[] }>;
+    npm: ProviderResult<{ packageName: string; url: string }>;
   };
   suggestions: string[];
   timings: {

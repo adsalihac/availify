@@ -6,6 +6,7 @@ import {
   DomainProvider,
   GithubProvider,
   GooglePlayProvider,
+  NpmProvider,
 } from "@/lib/providers";
 import {
   calculateScore,
@@ -14,6 +15,7 @@ import {
   generateSuggestions,
   generateVariants,
   normalizeName,
+  toCompactLower,
 } from "@/lib/utils";
 
 const CACHE_TTL_MS = 1000 * 60 * 10;
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
     new DomainProvider(),
     new GithubProvider(),
     new BundleIdProvider(),
+    new NpmProvider(),
   ];
 
   const providerResults = await Promise.all(
@@ -139,6 +142,16 @@ export async function POST(request: NextRequest) {
             emptyProvider(
               { username: "error", org: "error" },
               "Unable to check GitHub.",
+            ),
+          ] as const;
+        }
+        if (provider.id === "npm") {
+          const pName = toCompactLower(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { packageName: pName, url: `https://www.npmjs.com/package/${pName}` },
+              "Unable to check npm registry.",
             ),
           ] as const;
         }

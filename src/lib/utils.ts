@@ -35,7 +35,7 @@ export function generateVariants(input: string) {
 
 export function generateDomains(input: string) {
   const compact = toCompactLower(input);
-  const tlds = ["com", "app", "io", "dev", "co"];
+  const tlds = ["com", "app", "io", "dev", "co", "xyz", "me"];
   return tlds.map((tld) => `${compact}.${tld}`);
 }
 
@@ -78,20 +78,16 @@ export function calculateScore(response: CheckResponse) {
   statuses.push(response.providers.googlePlay.status);
   statuses.push(response.providers.github.data.username);
   statuses.push(response.providers.github.data.org);
-  response.providers.domains.data.results.forEach((domain) =>
-    statuses.push(domain.status),
-  );
-  response.providers.bundleIds.data.results.forEach((bundle) =>
-    statuses.push(bundle.status),
-  );
+  statuses.push(response.providers.npm.status);
+  response.providers.domains.data.results.forEach((d) => statuses.push(d.status));
+  response.providers.bundleIds.data.results.forEach((b) => statuses.push(b.status));
 
-  const total = statuses.length || 1;
-  const weighted =
-    statuses.reduce((acc, status) => {
-      if (status === "available") return acc + 1;
-      if (status === "partial") return acc + 0.5;
-      return acc;
-    }, 0) / total;
+  const total = statuses.filter(s => s !== "error").length || 1;
+  const weighted = statuses.reduce((acc, status) => {
+    if (status === "available") return acc + 1;
+    if (status === "partial") return acc + 0.5;
+    return acc;
+  }, 0) / total;
 
   const value = Math.round(weighted * 100);
   return { value, label: scoreLabel(value) };
