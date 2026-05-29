@@ -7,6 +7,7 @@ import {
   GithubProvider,
   GooglePlayProvider,
   NpmProvider,
+  SocialProvider,
 } from "@/lib/providers";
 import {
   calculateScore,
@@ -93,6 +94,7 @@ export async function POST(request: NextRequest) {
     new GithubProvider(),
     new BundleIdProvider(),
     new NpmProvider(),
+    new SocialProvider(),
   ];
 
   const providerResults = await Promise.all(
@@ -153,6 +155,12 @@ export async function POST(request: NextRequest) {
               { packageName: pName, url: `https://www.npmjs.com/package/${pName}` },
               "Unable to check npm registry.",
             ),
+          ] as const;
+        }
+        if (provider.id === "social") {
+          return [
+            provider.id,
+            emptyProvider({ results: [] }, "Unable to check social media."),
           ] as const;
         }
         return [

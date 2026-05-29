@@ -81,6 +81,7 @@ export function calculateScore(response: CheckResponse) {
   statuses.push(response.providers.npm.status);
   response.providers.domains.data.results.forEach((d) => statuses.push(d.status));
   response.providers.bundleIds.data.results.forEach((b) => statuses.push(b.status));
+  response.providers.social.data.results.forEach((s) => statuses.push(s.status));
 
   const total = statuses.filter(s => s !== "error").length || 1;
   const weighted = statuses.reduce((acc, status) => {

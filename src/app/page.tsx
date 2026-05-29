@@ -23,6 +23,7 @@ const progressLabels = [
   { key: "github", label: "GitHub" },
   { key: "bundleIds", label: "Bundle IDs" },
   { key: "npm", label: "npm Registry" },
+  { key: "social", label: "Social Media" },
 ] as const;
 
 type ProgressState = Record<(typeof progressLabels)[number]["key"], ProgressStatus>;
@@ -105,6 +106,7 @@ export default function Home() {
     github: "checking",
     bundleIds: "checking",
     npm: "checking",
+    social: "checking",
   });
   const [toast, setToast] = useState<string | null>(null);
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
@@ -148,6 +150,7 @@ export default function Home() {
         github: data.providers.github.status === "error" ? "error" : "complete",
         bundleIds: data.providers.bundleIds.status === "error" ? "error" : "complete",
         npm: data.providers.npm.status === "error" ? "error" : "complete",
+        social: data.providers.social.status === "error" ? "error" : "complete",
       });
     },
     onError: (err: Error) => {
@@ -160,6 +163,7 @@ export default function Home() {
         github: "error",
         bundleIds: "error",
         npm: "error",
+        social: "error",
       });
     },
   });
@@ -186,6 +190,7 @@ export default function Home() {
         github: "checking",
         bundleIds: "checking",
         npm: "checking",
+        social: "checking",
       });
       setError(null);
       setResults(null);
@@ -607,7 +612,7 @@ export default function Home() {
                 </div>
 
                 {/* Domains */}
-                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-7">
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-slate-50">
@@ -620,35 +625,33 @@ export default function Home() {
                     </div>
                     <AvailabilityBadge status={results.providers.domains.status} />
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     {results.providers.domains.data.results.map((domain) => (
                       <div
                         key={domain.domain}
                         className={clsx(
-                          "flex flex-col gap-1 rounded-xl border px-3 py-2.5",
+                          "flex items-center gap-2 rounded-full border px-3 py-1.5",
                           domain.status === "available" && "border-emerald-200 bg-emerald-50",
                           domain.status === "taken" && "border-rose-200 bg-rose-50",
                           domain.status === "error" && "border-zinc-200 bg-zinc-50",
                         )}
                       >
-                        <div className="flex items-center gap-1">
-                          <span className={clsx(
-                            "text-[11px] font-semibold",
-                            domain.status === "available" && "text-emerald-600",
-                            domain.status === "taken" && "text-rose-600",
-                            domain.status === "error" && "text-zinc-500",
-                          )}>
-                            {domain.status === "available" ? "✓" : "✕"}
-                          </span>
-                          <span className={clsx(
-                            "text-xs font-medium",
-                            domain.status === "available" && "text-emerald-700",
-                            domain.status === "taken" && "text-rose-700",
-                            domain.status === "error" && "text-zinc-600",
-                          )}>
-                            {domain.domain}
-                          </span>
-                        </div>
+                        <span className={clsx(
+                          "text-xs font-semibold",
+                          domain.status === "available" && "text-emerald-600",
+                          domain.status === "taken" && "text-rose-600",
+                          domain.status === "error" && "text-zinc-500",
+                        )}>
+                          {domain.status === "available" ? "✓" : "✕"}
+                        </span>
+                        <span className={clsx(
+                          "text-xs font-medium",
+                          domain.status === "available" && "text-emerald-700",
+                          domain.status === "taken" && "text-rose-700",
+                          domain.status === "error" && "text-zinc-600",
+                        )}>
+                          {domain.domain}
+                        </span>
                         {domain.status === "available" && (
                           <a
                             href={`https://www.namecheap.com/domains/registration/results/?domain=${domain.domain}`}
@@ -664,8 +667,39 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* GitHub */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#24292f]">
+                        <svg viewBox="0 0 16 16" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">GitHub</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.github.status} />
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                      <div>
+                        <p className="font-mono text-sm font-medium text-primary">github.com/{results.normalized}</p>
+                        <p className="text-xs text-secondary">Username</p>
+                      </div>
+                      <AvailabilityBadge status={results.providers.github.data.username} />
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                      <div>
+                        <p className="font-mono text-sm font-medium text-primary">github.com/orgs/{results.normalized}</p>
+                        <p className="text-xs text-secondary">Organization</p>
+                      </div>
+                      <AvailabilityBadge status={results.providers.github.data.org} />
+                    </div>
+                  </div>
+                </div>
+
                 {/* npm */}
-                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-5">
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CB3837]">
@@ -725,52 +759,71 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* GitHub */}
-                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                {/* Social Media */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#24292f]">
-                        <svg viewBox="0 0 16 16" className="h-4 w-4 fill-white" aria-hidden="true">
-                          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-5h2v2h-2v-2zm0-8h2v6h-2V7z"/>
                         </svg>
                       </div>
-                      <h3 className="text-[15px] font-semibold text-primary">GitHub</h3>
+                      <h3 className="text-[15px] font-semibold text-primary">Social Media</h3>
                     </div>
-                    <AvailabilityBadge status={results.providers.github.status} />
+                    <AvailabilityBadge status={results.providers.social.status} />
                   </div>
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
-                      <div>
-                        <p className="font-mono text-sm font-medium text-primary">github.com/{results.normalized}</p>
-                        <p className="text-xs text-secondary">Username</p>
-                      </div>
-                      <AvailabilityBadge status={results.providers.github.data.username} />
+                  {results.providers.social.error ? (
+                    <p className="mt-3 text-sm text-rose-600">{results.providers.social.error}</p>
+                  ) : (
+                    <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                      {results.providers.social.data.results.map((platform) => (
+                        <a
+                          key={platform.id}
+                          href={platform.profileUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={clsx(
+                            "flex flex-col gap-1.5 rounded-xl border px-3 py-2.5 transition hover:bg-slate-50",
+                            platform.status === "taken" && "border-rose-200 hover:border-rose-300",
+                            platform.status === "available" && "border-emerald-200 hover:border-emerald-300",
+                            platform.status === "error" && "border-border hover:border-primary",
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[13px] font-semibold text-primary">{platform.name}</span>
+                            <AvailabilityBadge status={platform.status} />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="font-mono text-[11px] text-secondary">@{platform.username}</p>
+                            <span className={clsx(
+                              "text-[10px] font-semibold",
+                              platform.status === "available" && "text-emerald-600",
+                              platform.status === "taken" && "text-rose-600",
+                              platform.status === "error" && "text-secondary",
+                            )}>
+                              {platform.status === "taken" ? "View →" : platform.status === "available" ? "Available →" : "Verify →"}
+                            </span>
+                          </div>
+                        </a>
+                      ))}
                     </div>
-                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
-                      <div>
-                        <p className="font-mono text-sm font-medium text-primary">github.com/orgs/{results.normalized}</p>
-                        <p className="text-xs text-secondary">Organization</p>
-                      </div>
-                      <AvailabilityBadge status={results.providers.github.data.org} />
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Name Suggestions */}
                 {isUnavailable && results.suggestions.length > 0 && (
-                  <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
                     <div className="flex items-center justify-between">
                       <h3 className="text-[15px] font-semibold text-primary">Name Suggestions</h3>
                       <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">Deterministic</span>
                     </div>
-                    <p className="mt-1 text-xs text-secondary">Click a suggestion to check its availability.</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="mt-4 flex gap-2 overflow-x-auto pb-1 scrollbar-none">
                       {results.suggestions.map((suggestion) => (
                         <button
                           key={suggestion}
                           type="button"
                           onClick={() => { setQuery(suggestion); handleSearch(suggestion); }}
-                          className="rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-primary shadow-sm transition hover:border-primary hover:bg-slate-50"
+                          className="shrink-0 rounded-xl border border-border bg-white px-3 py-2 text-sm font-medium text-primary shadow-sm transition hover:border-primary hover:bg-slate-50"
                         >
                           {suggestion}
                         </button>

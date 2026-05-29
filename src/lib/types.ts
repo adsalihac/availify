@@ -18,6 +18,14 @@ export interface BundleIdResult {
   status: AvailabilityStatus;
 }
 
+export interface SocialResult {
+  id: string;
+  name: string;
+  username: string;
+  profileUrl: string;
+  status: AvailabilityStatus;
+}
+
 export interface ProviderResult<T> {
   status: AvailabilityStatus;
   data: T;
@@ -39,6 +47,7 @@ export interface CheckResponse {
     github: ProviderResult<{ username: AvailabilityStatus; org: AvailabilityStatus }>;
     bundleIds: ProviderResult<{ results: BundleIdResult[] }>;
     npm: ProviderResult<{ packageName: string; url: string }>;
+    social: ProviderResult<{ results: SocialResult[] }>;
   };
   suggestions: string[];
   timings: {
