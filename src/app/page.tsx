@@ -349,6 +349,7 @@ export default function Home() {
               <ScoreCard score={results.score.value} label={results.score.label} />
 
               <div className="col-span-12 grid grid-cols-12 gap-6">
+                {/* Apple App Store card */}
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[16px] font-semibold text-primary">
@@ -388,8 +389,49 @@ export default function Home() {
                       </p>
                     )}
                   </div>
+
+                  {/* Apple Bundle IDs: com.company.* and app.* formats */}
+                  <div className="mt-5 border-t border-border pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-secondary">
+                      iOS Bundle Identifiers
+                    </p>
+                    <div className="space-y-2">
+                      {results.providers.bundleIds.data.results
+                        .filter(
+                          (b) =>
+                            b.bundleId.startsWith("com.company.") ||
+                            b.bundleId.startsWith("app."),
+                        )
+                        .map((bundle) => (
+                          <div
+                            key={bundle.bundleId}
+                            className="flex items-center justify-between rounded-xl border border-border px-3 py-2"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-primary">
+                                {bundle.bundleId}
+                              </p>
+                              <p className="text-xs text-secondary">Bundle ID</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <AvailabilityBadge status={bundle.status} />
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(bundle.bundleId)}
+                                className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
+                              >
+                                {copiedValue === bundle.bundleId
+                                  ? "Copied"
+                                  : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
 
+                {/* Google Play Store card */}
                 <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
                   <div className="flex items-center justify-between">
                     <h3 className="text-[16px] font-semibold text-primary">
@@ -430,6 +472,49 @@ export default function Home() {
                         No direct matches found. This name looks available.
                       </p>
                     )}
+                  </div>
+
+                  {/* Android Bundle IDs: com.* and io.* formats */}
+                  <div className="mt-5 border-t border-border pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-[0.15em] text-secondary">
+                      Android Package Names
+                    </p>
+                    <div className="space-y-2">
+                      {results.providers.bundleIds.data.results
+                        .filter(
+                          (b) =>
+                            (b.bundleId.startsWith("com.") &&
+                              !b.bundleId.startsWith("com.company.")) ||
+                            b.bundleId.startsWith("io."),
+                        )
+                        .map((bundle) => (
+                          <div
+                            key={bundle.bundleId}
+                            className="flex items-center justify-between rounded-xl border border-border px-3 py-2"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-primary">
+                                {bundle.bundleId}
+                              </p>
+                              <p className="text-xs text-secondary">
+                                Package Name
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <AvailabilityBadge status={bundle.status} />
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(bundle.bundleId)}
+                                className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
+                              >
+                                {copiedValue === bundle.bundleId
+                                  ? "Copied"
+                                  : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </div>
                 </div>
 
@@ -494,43 +579,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-[16px] font-semibold text-primary">
-                      Bundle Identifiers
-                    </h3>
-                    <AvailabilityBadge
-                      status={results.providers.bundleIds.status}
-                    />
-                  </div>
-                  <div className="mt-4 space-y-3 text-[14px]">
-                    {results.providers.bundleIds.data.results.map((bundle) => (
-                      <div
-                        key={bundle.bundleId}
-                        className="flex items-center justify-between rounded-xl border border-border px-3 py-2"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-primary">
-                            {bundle.bundleId}
-                          </p>
-                          <p className="text-xs text-secondary">Bundle ID</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <AvailabilityBadge status={bundle.status} />
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(bundle.bundleId)}
-                            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
-                          >
-                            {copiedValue === bundle.bundleId
-                              ? "Copied"
-                              : "Copy Bundle ID"}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {isUnavailable && results.suggestions.length > 0 && (
                   <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
