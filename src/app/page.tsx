@@ -1,65 +1,552 @@
-import Image from "next/image";
+"use client";
+
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import { clsx } from "clsx";
+import type { CheckResponse } from "@/lib/types";
+import { generateVariants, normalizeName } from "@/lib/utils";
+import { useDebouncedValue } from "@/lib/hooks";
+import { AvailabilityBadge } from "@/components/availability-badge";
+import { CommandPalette } from "@/components/command-palette";
+import { ProgressTerminal, ProgressStatus } from "@/components/progress-terminal";
+import { ScoreCard } from "@/components/score-card";
+import { SkeletonCard } from "@/components/skeleton-card";
+
+const STORAGE_KEY = "app-name-checker:recent";
+
+const progressLabels = [
+  { key: "apple", label: "Apple App Store" },
+  { key: "googlePlay", label: "Google Play Store" },
+  { key: "domains", label: "Domains" },
+  { key: "github", label: "GitHub" },
+  { key: "bundleIds", label: "Bundle IDs" },
+] as const;
+
+type ProgressState = Record<(typeof progressLabels)[number]["key"], ProgressStatus>;
+
+function EmptyState() {
+  return (
+    <div className="col-span-12 rounded-3xl border border-border bg-white px-8 py-12 text-center shadow-[0_20px_60px_-40px_rgba(15,23,42,0.25)]">
+      <p className="text-sm font-medium text-secondary">
+        Start by entering an app name.
+      </p>
+      <p className="mt-2 text-sm text-secondary">
+        We&apos;ll instantly check App Store, Play Store, Domains, Bundle IDs, and
+        GitHub availability.
+      </p>
+      <div className="mt-6 flex items-center justify-center gap-2 text-xs text-secondary">
+        <span className="rounded-full border border-border px-3 py-1">
+          Terminal-grade results
+        </span>
+        <span className="rounded-full border border-border px-3 py-1">
+          Instant suggestions
+        </span>
+        <span className="rounded-full border border-border px-3 py-1">
+          Copy-ready bundles
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<CheckResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? (JSON.parse(stored) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [progress, setProgress] = useState<ProgressState>({
+    apple: "checking",
+    googlePlay: "checking",
+    domains: "checking",
+    github: "checking",
+    bundleIds: "checking",
+  });
+  const [toast, setToast] = useState<string | null>(null);
+  const [copiedValue, setCopiedValue] = useState<string | null>(null);
+
+  const debouncedQuery = useDebouncedValue(query, 240);
+  const previewVariants = useMemo(
+    () => (debouncedQuery ? generateVariants(debouncedQuery) : []),
+    [debouncedQuery],
+  );
+
+  const mutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const data = (await response.json()) as CheckResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error ?? "Unable to check availability.");
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      setResults(data);
+      setError(null);
+      setProgress({
+        apple: data.providers.apple.status === "error" ? "error" : "complete",
+        googlePlay:
+          data.providers.googlePlay.status === "error" ? "error" : "complete",
+        domains: data.providers.domains.status === "error" ? "error" : "complete",
+        github: data.providers.github.status === "error" ? "error" : "complete",
+        bundleIds:
+          data.providers.bundleIds.status === "error" ? "error" : "complete",
+      });
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      setResults(null);
+      setProgress({
+        apple: "error",
+        googlePlay: "error",
+        domains: "error",
+        github: "error",
+        bundleIds: "error",
+      });
+    },
+  });
+
+  const updateRecent = useCallback((name: string) => {
+    setRecentSearches((prev) => {
+      const next = [name, ...prev.filter((item) => item !== name)].slice(0, 6);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const handleSearch = useCallback(
+    (value: string) => {
+      const normalized = normalizeName(value);
+      if (!normalized || normalized.length < 2) {
+        setError("Enter a valid app name to begin.");
+        return;
+      }
+      setProgress({
+        apple: "checking",
+        googlePlay: "checking",
+        domains: "checking",
+        github: "checking",
+        bundleIds: "checking",
+      });
+      setError(null);
+      setResults(null);
+      updateRecent(normalized);
+      mutation.mutate(normalized);
+    },
+    [mutation, updateRecent],
+  );
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    handleSearch(query);
+  };
+
+  const handleCopy = useCallback(async (value: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopiedValue(value);
+    setToast("Copied to clipboard");
+    setTimeout(() => setCopiedValue(null), 1500);
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
+  const handleCopyResults = useCallback(async () => {
+    if (!results) return;
+    await navigator.clipboard.writeText(JSON.stringify(results, null, 2));
+    setToast("Results copied");
+    setTimeout(() => setToast(null), 2000);
+  }, [results]);
+
+  const handleExport = useCallback(() => {
+    if (!results) return;
+    const blob = new Blob([JSON.stringify(results, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${results.normalized}-availability.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast("Report exported");
+    setTimeout(() => setToast(null), 2000);
+  }, [results]);
+
+  const progressSteps = progressLabels.map((step) => ({
+    ...step,
+    status: progress[step.key],
+  }));
+
+  const showProgress = mutation.isPending || results;
+
+  const isUnavailable =
+    results &&
+    (results.providers.apple.status !== "available" ||
+      results.providers.googlePlay.status !== "available" ||
+      results.providers.github.status !== "available" ||
+      results.providers.domains.status !== "available" ||
+      results.providers.bundleIds.status !== "available");
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="relative min-h-screen bg-background">
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        recentSearches={recentSearches}
+        onSearchFocus={() => inputRef.current?.focus()}
+        onSelectRecent={(name) => {
+          setQuery(name);
+          handleSearch(name);
+        }}
+        onCopyResults={handleCopyResults}
+        onExportReport={handleExport}
+      />
+
+      <main className="relative mx-auto flex w-full max-w-[1200px] flex-1 flex-col gap-12 px-6 pb-24 pt-16">
+        <header className="mx-auto flex w-full max-w-3xl flex-col items-center text-center gap-4">
+          <h1 className="text-4xl font-semibold text-primary md:text-5xl">
+            App Name Checker
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-sm font-medium text-secondary md:text-base">
+            Check App Store, Play Store, Domains, Bundle IDs, and GitHub
+            availability in seconds.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        </header>
+
+        <section className="mx-auto flex w-full max-w-3xl flex-col gap-5">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-3 md:flex-row"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="MyAwesomeApp"
+                className="h-14 w-full rounded-2xl border border-border bg-white px-4 text-base font-medium text-primary shadow-[0_15px_45px_-35px_rgba(15,23,42,0.3)] outline-none transition focus-visible:ring-2 focus-visible:ring-ring/30"
+              />
+              <span className="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full border border-border px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-secondary md:inline-flex">
+                ⌘ K
+              </span>
+            </div>
+            <button
+              type="submit"
+              className="h-14 rounded-2xl bg-primary px-6 text-sm font-semibold text-white shadow-[0_15px_45px_-35px_rgba(15,23,42,0.4)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_55px_-35px_rgba(15,23,42,0.5)]"
+            >
+              Check Availability
+            </button>
+          </form>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-secondary">
+            <span className="uppercase tracking-[0.2em]">Preview</span>
+            {previewVariants.length > 0 ? (
+              previewVariants.map((variant) => (
+                <span
+                  key={variant}
+                  className="rounded-full border border-border px-2 py-1 font-medium text-primary"
+                >
+                  {variant}
+                </span>
+              ))
+            ) : (
+              <span className="text-secondary">
+                Start typing to generate variations
+              </span>
+            )}
+          </div>
+
+          {recentSearches.length > 0 && (
+            <div className="flex flex-wrap gap-2 text-xs text-secondary">
+              <span className="uppercase tracking-[0.2em]">
+                Recent searches
+              </span>
+              {recentSearches.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => handleSearch(name)}
+                  className="rounded-full border border-border px-3 py-1 text-primary transition hover:border-primary"
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="grid grid-cols-12 gap-6">
+          {error && (
+            <div className="col-span-12 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-4 text-sm text-rose-700">
+              {error}
+            </div>
+          )}
+
+          {showProgress && (
+            <ProgressTerminal steps={progressSteps} />
+          )}
+
+          {mutation.isPending && (
+            <>
+              <SkeletonCard height="h-48" />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          )}
+
+          {!mutation.isPending && results && (
+            <>
+              <ScoreCard score={results.score.value} label={results.score.label} />
+
+              <div className="col-span-12 grid grid-cols-12 gap-6">
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-primary">
+                      Apple App Store
+                    </h3>
+                    <AvailabilityBadge status={results.providers.apple.status} />
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm text-secondary">
+                    {results.providers.apple.error && (
+                      <p className="text-rose-600">
+                        {results.providers.apple.error}
+                      </p>
+                    )}
+                    {results.providers.apple.data.matches.length > 0 ? (
+                      results.providers.apple.data.matches.map((match) => (
+                        <a
+                          key={match.url}
+                          href={match.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-primary transition hover:border-primary"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{match.name}</p>
+                            <p className="text-xs text-secondary">
+                              {match.bundleId ?? "Bundle ID unavailable"}
+                            </p>
+                          </div>
+                          <span className="text-xs text-secondary">
+                            {match.developer ?? "Apple"}
+                          </span>
+                        </a>
+                      ))
+                    ) : (
+                      <p className="text-secondary">
+                        No direct matches found. This name looks available.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-primary">
+                      Google Play Store
+                    </h3>
+                    <AvailabilityBadge
+                      status={results.providers.googlePlay.status}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-2 text-sm text-secondary">
+                    {results.providers.googlePlay.error && (
+                      <p className="text-rose-600">
+                        {results.providers.googlePlay.error}
+                      </p>
+                    )}
+                    {results.providers.googlePlay.data.matches.length > 0 ? (
+                      results.providers.googlePlay.data.matches.map((match) => (
+                        <a
+                          key={match.url}
+                          href={match.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-between rounded-xl border border-border px-3 py-2 text-primary transition hover:border-primary"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">{match.name}</p>
+                            <p className="text-xs text-secondary">
+                              {match.packageName}
+                            </p>
+                          </div>
+                          <span className="text-xs text-secondary">
+                            View app
+                          </span>
+                        </a>
+                      ))
+                    ) : (
+                      <p className="text-secondary">
+                        No direct matches found. This name looks available.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-primary">
+                      Domains
+                    </h3>
+                    <AvailabilityBadge status={results.providers.domains.status} />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {results.providers.domains.data.results.map((domain) => (
+                      <span
+                        key={domain.domain}
+                        className={clsx(
+                          "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
+                          domain.status === "available" &&
+                            "border-emerald-200 bg-emerald-50 text-emerald-700",
+                          domain.status === "taken" &&
+                            "border-rose-200 bg-rose-50 text-rose-700",
+                          domain.status === "error" &&
+                            "border-zinc-200 bg-zinc-100 text-zinc-600",
+                        )}
+                      >
+                        {domain.status === "available" ? "✓" : "✕"}{" "}
+                        {domain.domain}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-primary">
+                      GitHub
+                    </h3>
+                    <AvailabilityBadge status={results.providers.github.status} />
+                  </div>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-primary">
+                          github.com/{results.normalized}
+                        </p>
+                        <p className="text-xs text-secondary">Username</p>
+                      </div>
+                      <AvailabilityBadge
+                        status={results.providers.github.data.username}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
+                      <div>
+                        <p className="text-sm font-medium text-primary">
+                          github.com/orgs/{results.normalized}
+                        </p>
+                        <p className="text-xs text-secondary">Organization</p>
+                      </div>
+                      <AvailabilityBadge
+                        status={results.providers.github.data.org}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-semibold text-primary">
+                      Bundle Identifiers
+                    </h3>
+                    <AvailabilityBadge
+                      status={results.providers.bundleIds.status}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-3 text-sm">
+                    {results.providers.bundleIds.data.results.map((bundle) => (
+                      <div
+                        key={bundle.bundleId}
+                        className="flex items-center justify-between rounded-xl border border-border px-3 py-2"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-primary">
+                            {bundle.bundleId}
+                          </p>
+                          <p className="text-xs text-secondary">Bundle ID</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <AvailabilityBadge status={bundle.status} />
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(bundle.bundleId)}
+                            className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
+                          >
+                            {copiedValue === bundle.bundleId
+                              ? "Copied"
+                              : "Copy Bundle ID"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {isUnavailable && results.suggestions.length > 0 && (
+                  <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-semibold text-primary">
+                        Name Suggestions
+                      </h3>
+                      <span className="text-xs uppercase tracking-[0.2em] text-secondary">
+                        Deterministic
+                      </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {results.suggestions.map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => {
+                            setQuery(suggestion);
+                            handleSearch(suggestion);
+                          }}
+                          className="rounded-full border border-border px-3 py-1 text-sm text-primary transition hover:border-primary"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {!mutation.isPending && !results && !error && <EmptyState />}
+        </section>
       </main>
+
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            className="fixed bottom-6 right-6 rounded-full border border-border bg-white px-4 py-2 text-xs font-medium text-primary shadow-lg"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
