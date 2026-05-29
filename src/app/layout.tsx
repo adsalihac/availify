@@ -19,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "App Name Checker",
+  title: "Availify",
   description:
     "Check App Store, Play Store, Domains, Bundle IDs, and GitHub availability in seconds.",
   icons: {
