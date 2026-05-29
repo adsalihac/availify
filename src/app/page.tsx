@@ -84,23 +84,20 @@ function EmptyState() {
 
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState(() => {
-    if (typeof window === "undefined") return "";
-    const q = new URLSearchParams(window.location.search).get("q");
-    return q ? q.trim() : "";
-  });
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<CheckResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
-    if (typeof window === "undefined") return [];
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? (JSON.parse(stored) as string[]) : [];
+      if (stored) setTimeout(() => setRecentSearches(JSON.parse(stored) as string[]), 0);
     } catch {
-      return [];
+      // ignore
     }
-  });
+  }, []);
   const [progress, setProgress] = useState<ProgressState>({
     apple: "checking",
     googlePlay: "checking",
@@ -203,16 +200,25 @@ export default function Home() {
     [mutation, updateRecent],
   );
 
-  // Auto-run from ?q= on mount
+  // Clear ?q= from URL on refresh so results don't auto-run
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q && q.trim().length >= 2) {
-      const trimmed = q.trim();
-      setTimeout(() => handleSearch(trimmed), 0);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("q")) {
+      url.searchParams.delete("q");
+      window.history.replaceState({}, "", url.toString());
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reset results when query is cleared
+  useEffect(() => {
+    if (query === "") {
+      setTimeout(() => {
+        setResults(null);
+        setError(null);
+      }, 0);
+    }
+  }, [query]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -339,7 +345,7 @@ export default function Home() {
         <header className="mx-auto flex w-full max-w-2xl flex-col items-center gap-5 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-xs font-medium text-secondary shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Free · Open Source · No API key required
+            Free to use · No sign-up · Instant results
           </div>
           <h1 className="text-[44px] font-extrabold leading-[1.04] tracking-tight text-primary md:text-[56px]">
             Availify
