@@ -67,6 +67,7 @@ export function ScoreCard({ score, label }: ScoreCardProps) {
             { label: "Domains" },
             { label: "GitHub" },
             { label: "npm" },
+            { label: "PyPI" },
             { label: "Bundle IDs" },
           ].map((item) => (
             <span key={item.label} className="rounded-full border border-border px-3 py-1 text-xs font-medium text-secondary">

@@ -23,6 +23,7 @@ const progressLabels = [
   { key: "github", label: "GitHub" },
   { key: "bundleIds", label: "Bundle IDs" },
   { key: "npm", label: "npm Registry" },
+  { key: "pypi", label: "PyPI" },
   { key: "social", label: "Social Media" },
 ] as const;
 
@@ -34,6 +35,7 @@ const platforms = [
   { label: "Domains" },
   { label: "GitHub" },
   { label: "npm" },
+  { label: "PyPI" },
   { label: "Bundle IDs" },
 ];
 
@@ -106,11 +108,13 @@ export default function Home() {
     github: "checking",
     bundleIds: "checking",
     npm: "checking",
+    pypi: "checking",
     social: "checking",
   });
   const [toast, setToast] = useState<string | null>(null);
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
   const [starCount, setStarCount] = useState<number | null>(null);
+  const [showBreakdown, setShowBreakdown] = useState(false);
 
   useEffect(() => {
     fetch("https://api.github.com/repos/adsalihac/availify")
@@ -150,6 +154,7 @@ export default function Home() {
         github: data.providers.github.status === "error" ? "error" : "complete",
         bundleIds: data.providers.bundleIds.status === "error" ? "error" : "complete",
         npm: data.providers.npm.status === "error" ? "error" : "complete",
+        pypi: data.providers.pypi.status === "error" ? "error" : "complete",
         social: data.providers.social.status === "error" ? "error" : "complete",
       });
     },
@@ -163,6 +168,7 @@ export default function Home() {
         github: "error",
         bundleIds: "error",
         npm: "error",
+        pypi: "error",
         social: "error",
       });
     },
@@ -190,6 +196,7 @@ export default function Home() {
         github: "checking",
         bundleIds: "checking",
         npm: "checking",
+        pypi: "checking",
         social: "checking",
       });
       setError(null);
@@ -238,34 +245,34 @@ export default function Home() {
     setTimeout(() => setToast(null), 2000);
   }, []);
 
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2000);
+  }, []);
+
   const handleCopyResults = useCallback(async () => {
     if (!results) return;
     await navigator.clipboard.writeText(JSON.stringify(results, null, 2));
-    setToast("Results copied");
-    setTimeout(() => setToast(null), 2000);
-  }, [results]);
+    showToast("Results copied");
+  }, [results, showToast]);
 
   const handleExport = useCallback(() => {
     if (!results) return;
-    const blob = new Blob([JSON.stringify(results, null, 2)], {
-      type: "application/json",
-    });
+    const blob = new Blob([JSON.stringify(results, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${results.normalized}-availability.json`;
-    link.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `availify-${results.normalized}.json`;
+    a.click();
     URL.revokeObjectURL(url);
-    setToast("Report exported");
-    setTimeout(() => setToast(null), 2000);
-  }, [results]);
+    showToast("Exported!");
+  }, [results, showToast]);
 
   const handleShareURL = useCallback(async () => {
     const url = window.location.href;
     await navigator.clipboard.writeText(url);
-    setToast("Shareable link copied!");
-    setTimeout(() => setToast(null), 2500);
-  }, []);
+    showToast("Shareable link copied!");
+  }, [showToast]);
 
   const progressSteps = progressLabels.map((step) => ({
     ...step,
@@ -455,22 +462,79 @@ export default function Home() {
             <>
               <ScoreCard score={results.score.value} label={results.score.label} />
 
+              {/* Score breakdown toggle */}
+              <div className="col-span-12 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowBreakdown((v) => !v)}
+                  className="rounded-full border border-border px-3 py-1.5 text-xs font-medium text-primary transition hover:border-primary hover:bg-slate-50"
+                >
+                  {showBreakdown ? "Hide breakdown" : "Show breakdown"}
+                </button>
+              </div>
+
+              {showBreakdown && (
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5">
+                  <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-secondary">Score Breakdown</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Apple App Store", status: results.providers.apple.status },
+                      { label: "Google Play Store", status: results.providers.googlePlay.status },
+                      { label: "GitHub (username)", status: results.providers.github.data.username },
+                      { label: "GitHub (org)", status: results.providers.github.data.org },
+                      { label: "Domains", status: results.providers.domains.status },
+                      { label: "Bundle IDs", status: results.providers.bundleIds.status },
+                      { label: "npm", status: results.providers.npm.status },
+                      { label: "PyPI", status: results.providers.pypi.status },
+                      { label: "Social Media", status: results.providers.social.status },
+                    ].map((row) => (
+                      <div key={row.label} className="flex items-center justify-between rounded-lg px-3 py-1.5 hover:bg-slate-50">
+                        <span className="flex items-center gap-2 text-xs text-primary">
+                          <span className={clsx(
+                            "text-[11px] font-bold",
+                            row.status === "available" && "text-emerald-600",
+                            row.status === "taken" && "text-rose-600",
+                            (row.status === "partial" || row.status === "error") && "text-amber-600",
+                          )}>
+                            {row.status === "available" ? "✓" : "✕"}
+                          </span>
+                          {row.label}
+                        </span>
+                        <AvailabilityBadge status={row.status} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Share row */}
               <div className="col-span-12 flex items-center justify-between">
                 <p className="text-sm font-medium text-secondary">
                   Results for <span className="font-bold text-primary">&ldquo;{results.name}&rdquo;</span>
                   <span className="ml-2 text-xs text-secondary">· {results.timings.totalMs}ms</span>
                 </p>
-                <button
-                  type="button"
-                  onClick={handleShareURL}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition hover:border-primary"
-                >
-                  <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M10 2h4v4M14 2l-6 6M6 4H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Share results
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition hover:border-primary"
+                  >
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8 2v8M5 7l3 3 3-3M3 12h10" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Export JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareURL}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-white px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition hover:border-primary"
+                  >
+                    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M10 2h4v4M14 2l-6 6M6 4H3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Share results
+                  </button>
+                </div>
               </div>
 
               <div className="col-span-12 grid grid-cols-12 gap-5">
@@ -753,6 +817,67 @@ export default function Home() {
                         <p className="font-mono text-xs text-secondary">
                           <span className="text-secondary">$</span>{" "}
                           <span className="font-medium text-primary">npm install {results.providers.npm.data.packageName}</span>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* PyPI */}
+                <div className="col-span-12 rounded-2xl border border-border bg-white px-6 py-5 md:col-span-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#006DAD]">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white" aria-hidden="true">
+                          <path d="M12 2C9.41 2 8 3.09 8 4.5V6h4v.5H6C4.34.5 3 5.91 3 8.5v1C3 12.09 4.34 13 6 13h1v-1.5C7 10.07 8.57 9 10.5 9H14c1.66 0 3-1.34 3-3V4.5C17 3.09 15.59 2 14 2h-2zm-1.5 1.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zM8 11v1.5C8 13.93 9.41 15 11 15h2c1.66 0 3-1.34 3-3v-1h-1v1c0 1.1-.9 2-2 2h-2c-1.1 0-2-.9-2-2V11H8zm4 5.5c2.59 0 4-1.09 4-2.5V12h-4v-.5h6c1.66 0 3-1.34 3-3.5v-1C21 4.91 19.66 4 18 4h-1v1.5C17 6.93 15.43 8 13.5 8H10c-1.66 0-3 1.34-3 3V13.5C7 14.91 8.41 16 10 16h2v.5zm1.5-1.75a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z"/>
+                        </svg>
+                      </div>
+                      <h3 className="text-[15px] font-semibold text-primary">PyPI</h3>
+                    </div>
+                    <AvailabilityBadge status={results.providers.pypi.status} />
+                  </div>
+                  <div className="mt-4">
+                    {results.providers.pypi.error ? (
+                      <p className="text-sm text-rose-600">{results.providers.pypi.error}</p>
+                    ) : (
+                      <div className="rounded-xl border border-border px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-mono text-sm font-medium text-primary">
+                              {results.providers.pypi.data.packageName}
+                            </p>
+                            <p className="text-xs text-secondary">PyPI package name</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AvailabilityBadge status={results.providers.pypi.status} />
+                            {results.providers.pypi.status === "available" && (
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(`pip install ${results.providers.pypi.data.packageName}`)}
+                                className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
+                              >
+                                {copiedValue === `pip install ${results.providers.pypi.data.packageName}` ? "Copied!" : "Copy install"}
+                              </button>
+                            )}
+                            {results.providers.pypi.status === "taken" && (
+                              <a
+                                href={results.providers.pypi.data.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="rounded-full border border-border px-3 py-1 text-xs font-medium text-primary transition hover:border-primary"
+                              >
+                                View →
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {results.providers.pypi.status === "available" && (
+                      <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2">
+                        <p className="font-mono text-xs text-secondary">
+                          <span className="text-secondary">$</span>{" "}
+                          <span className="font-medium text-primary">pip install {results.providers.pypi.data.packageName}</span>
                         </p>
                       </div>
                     )}

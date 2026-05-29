@@ -79,6 +79,7 @@ export function calculateScore(response: CheckResponse) {
   statuses.push(response.providers.github.data.username);
   statuses.push(response.providers.github.data.org);
   statuses.push(response.providers.npm.status);
+  statuses.push(response.providers.pypi.status);
   response.providers.domains.data.results.forEach((d) => statuses.push(d.status));
   response.providers.bundleIds.data.results.forEach((b) => statuses.push(b.status));
   response.providers.social.data.results.forEach((s) => statuses.push(s.status));

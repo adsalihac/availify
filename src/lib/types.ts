@@ -47,6 +47,7 @@ export interface CheckResponse {
     github: ProviderResult<{ username: AvailabilityStatus; org: AvailabilityStatus }>;
     bundleIds: ProviderResult<{ results: BundleIdResult[] }>;
     npm: ProviderResult<{ packageName: string; url: string }>;
+    pypi: ProviderResult<{ packageName: string; url: string }>;
     social: ProviderResult<{ results: SocialResult[] }>;
   };
   suggestions: string[];

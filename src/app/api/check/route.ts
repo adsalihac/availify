@@ -7,6 +7,7 @@ import {
   GithubProvider,
   GooglePlayProvider,
   NpmProvider,
+  PyPIProvider,
   SocialProvider,
 } from "@/lib/providers";
 import {
@@ -94,6 +95,7 @@ export async function POST(request: NextRequest) {
     new GithubProvider(),
     new BundleIdProvider(),
     new NpmProvider(),
+    new PyPIProvider(),
     new SocialProvider(),
   ];
 
@@ -154,6 +156,16 @@ export async function POST(request: NextRequest) {
             emptyProvider(
               { packageName: pName, url: `https://www.npmjs.com/package/${pName}` },
               "Unable to check npm registry.",
+            ),
+          ] as const;
+        }
+        if (provider.id === "pypi") {
+          const pName = toCompactLower(name);
+          return [
+            provider.id,
+            emptyProvider(
+              { packageName: pName, url: `https://pypi.org/project/${pName}` },
+              "Unable to check PyPI.",
             ),
           ] as const;
         }
